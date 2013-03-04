@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Project #1: Full-text Comparator{% endblock %}
+
+{% block more_css %}
+.highlight {background-color: yellow;}
+.group:before, .group:after {
+	content:"";
+	display:table;
+}
+.group:after {
+	clear:both;
+}
+.group {
+	zoom:1; /* IE6&7*/
+}
+th {font-weight:normal;}
+em {font-weight:blod;}
+#common_words {line-height:200%;}
+#common_words span {color:blue}
+.font-weight1 {font-size:100%;}
+.font-weight2 {font-size:130%;}
+.font-weight3 {font-size:160%;}
+.font-weight4 {font-size:200%;}
+.font-weight5 {font-size:250%;}
+{% endblock more_css %}
+
+{% block content %}
+<header id="branding">
+	<h1>Project #1: Full-text Comparator</h1>
+	<hr />
+</header>
+<div class="full layout-grid">
+	<section class="width4" id="upload_form">
+		<!-- Upload form. Note enctype attribute! -->
+		<form action="/" method="post" enctype="multipart/form-data">
+			
+			<label class="column first width1">XML1:  <input type="file" name="xml_file1" /></label>
+			<label class="column width1">XML2:  <input type="file" name="xml_file2" /></label>
+			<input class="column unitx1" type="submit" value="Upload" />
+		</form>
+	</section>
+	{% if has_result %}
+	<hr />
+	<section>
+		<h2>Results of comparison</h2>
+		<table class="table-column width4">
+			<thead>
+				<tr>
+					<th class="width2">
+						<h3>{{ xml.0.title }}</h3><br />
+						{{ xml.0.journal }}, {{ xml.0.year }}
+					</th>
+					<th class="width2">
+						<h3>{{ xml.1.title }}</h3><br />
+						{{ xml.1.journal }}, {{ xml.1.year }}
+					</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<th>
+						<em>Statistics</em>
+						{{ statistics_list.0|safe }}
+					</th>
+					<th>
+						<em>Statistics</em>
+						{{ statistics_list.1|safe }}
+					</th>
+				</tr>
+				<tr>
+					<th colspan="2" id="common_words">
+						<em>Identical words in both documents:</em><br />
+						{{ common_word_cloud|safe }}
+					</th>
+				</tr>
+				<tr>
+					<th>
+						<em>Abstract</em>
+						<p>{{ document_list.0 |safe }}</p>
+					</th>
+					<th>
+						<em>Abstract</em>
+						<p>{{ document_list.1 |safe }}</p>
+					</th>
+				</tr>
+				<tr>
+					<th colspan="2" id="common_words">
+						<em>Identical words in both documents:</em><br />
+						{{ common_word_cloud|safe }}
+					</th>
+				</tr>
+			</tbody>
+		</table>
+	</section>	
+	{% endif %}	
+	{% if alert is defined %}
+	<hr />
+	<div id='alert'>{{ alert }}</div>
+	{% endif %}
+</div>
+{% endblock content %}
+
+{% block jquery %}
+$("span").hover(
+    function(){
+        var theClass = $(this).attr("class");
+		theClass = theClass.split(" ", 1)[0];
+        if (theClass.match(/word_/)) {
+            $("span."+theClass).addClass("highlight");
+        }
+    },
+    function(){    
+        $("span").removeClass("highlight");
+    });
+$(function() {
+              $( "#alert" ).effect("highlight", { color: "#ff0000" }, 3000);
+            });
+
+{% endblock jquery %}

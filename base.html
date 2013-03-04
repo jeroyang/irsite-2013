@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<title>{% block title %}Projects for Biomedical Information Retrieval Course{% endblock %}
+		</title>
+
+		<link type="text/css" rel="stylesheet" media="screen" href="static/css/baseline.compress.css">
+		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script> 
+		<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.1/jquery-ui.min.js"></script>
+		<style>
+			#page { margin: 0 auto 36px auto; }
+			{% block more_css %}
+			{% endblock more_css %}
+		</style>
+	</head>
+	<body class="page-grid">
+		<div id="page">
+			{% block content %}
+			{% endblock content %}
+			<footer class="full">
+				{% block footer %}
+				<hr />
+				<p><small>Projects for Biomedical Information Retrieval Course. 2013 楊家融 p78011167
+				</small></p>
+				{% endblock footer %}
+			</footer>
+		</div>
+	<script>
+	{% block jquery %}
+	{% endblock jquery %}
+    </script>	
+	</body>
+</html>
