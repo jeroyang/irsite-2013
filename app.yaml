@@ -9,15 +9,16 @@ handlers:
 - url: /static/(.*)
   static_files: static/\1
   upload: static/(.*)
-  
+
 - url: /favicon\.ico
   static_files: static/images/favicon.ico
+  upload: static/images/favicon.ico
+
+- url: /project2
+  script: project2.view.app
 
 - url: .*
-  script: project1.app
-
-- url: /project1
-  script: project1.app
+  script: project1.view.app
 
 libraries:
 - name: webapp2
@@ -28,4 +29,3 @@ libraries:
 
 - name: lxml
   version: "2.3"
- 

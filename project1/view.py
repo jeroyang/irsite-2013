@@ -4,7 +4,7 @@ import re
 import os
 import jinja2
 
-jinja_environment = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.dirname(__file__)))
+jinja_environment = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.join(os.path.dirname(__file__), '..')))
  
 class MainPage(webapp2.RequestHandler):
     def get(self):
@@ -36,4 +36,4 @@ class MainPage(webapp2.RequestHandler):
         self.response.out.write(template.render(template_values))
 
         
-app = webapp2.WSGIApplication([('/', MainPage)], debug=True)
+app = webapp2.WSGIApplication([('/', MainPage), ('/project1', MainPage)], debug=True)
