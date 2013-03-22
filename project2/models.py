@@ -89,11 +89,8 @@ class Fetcher(object):
                 return xmltree.find('.//%s' % tag)
     
         for article in tree.findall('.//MedlineCitation'):
-            d = _safe_find('Pubdate', article)
-            try:
-                pub_date = datetime.datetime.strptime(" ".join((d.findtext("./Year"), d.findtext("./Month"), d.findtext("./Day"))), "%Y %b %d").date()
-            except:
-                pub_date = None
+            d = " ".join([s.strip() for s in article.xpath('.//PubDate//text()') if s.strip() != ''])
+            pub_date = datetime.datetime.strptime(d, "%Y %b %d").date()
             this_article = Article(id=int(article.findtext(".//PMID")), 
                 pmid=int(article.findtext(".//PMID")),
                 title=article.findtext(".//ArticleTitle"),
@@ -142,18 +139,11 @@ class Fetcher(object):
 
 
 class Train(db.Model):
-    """The db object for PositionalPostingList which contains the postings about one specific token
-    document_frequency
-    posting_list = pickle.load(positional_index) 
-    posting_list = deque([  (article.pmid, term_frequency, posting_deque([token_position, token_position, ...])),
-                             (article.pmid, term_frequency, posting_deque([token_position, token_position, ...])),
-                             ...  
-                           ])
-    """
+    """A train is a complete posting list for a specific token"""
     token = db.StringProperty()# We should use the token as the key_name
     document_frequency = db.IntegerProperty()
     cars = db.BlobProperty()
-
+    car_string = db.TextProperty()
 
 class InvertedIndex(object):
     def __init__(self):
@@ -173,16 +163,7 @@ class InvertedIndex(object):
 
     def save(self):
         for token, cars in self.auxiliary_index.items():
-            train = Train.all().filter('token=', token)
-
-            if sum(1 for _ in train)==0:
-                Train(key_name=token, token=token, document_frequency=1, cars=pickle.dumps(cars)).put()
-            else: 
-                train[0].document_frequency += 1
-                new_cars = pickle.loads(train[0].cars).extend(cars)
-                train[0].cars = pickle.dumps(new_cars)
-                train.put()
-                
+            Train(key_name=token, token=token, document_frequency=1, cars=pickle.dumps(cars), car_string=str(cars)).put()
 
 class SpellingCorrector(object):
     """A class of spelling corrector."""
