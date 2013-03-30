@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Project #2{% endblock %}
+{% block title %}Project #2: Match and Partial Match for Biomedicine Documents{% endblock %}
 
 {% block more_css %}
 {% endblock more_css %}
@@ -44,28 +44,7 @@
 {% endblock content %}
 
 {% block script %}
-    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
-    <script type="text/javascript">
-      google.load("visualization", "1", {packages:["corechart"]});
-      google.setOnLoadCallback(drawChart);
-      function drawChart() {
-        var data = new google.visualization.DataTable();
-        data.addColumn('number', 'Rank');
-        data.addColumn('number', 'Frequency');
-        data.addColumn({type:'string', role:'tooltip'});
-        
-        data.addRows([{{ tf_list }}]);
-        var options = {
-          title: 'Zipf\'s law',
-          hAxis: {title: 'Rank', minValue: 0, maxValue:4},
-          vAxis: {title: 'Frequency', minValue: 0, maxValue: 15},
-          legend: 'none'
-        };
 
-        var chart = new google.visualization.ScatterChart(document.getElementById('chart_div'));
-        chart.draw(data, options);
-      }
-    </script>
 {% endblock script %}
 
 

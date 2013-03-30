@@ -17,9 +17,10 @@ class MainPage(webapp2.RequestHandler):
         query_term = self.request.get('q')
         start_result = self.request.get('start')
 
-        if index_term and index_term != '': 
-            f = Fetcher(limit=10)
-            f.fetch_to_db_quick(index_term, True)
+        if index_term and index_term != '':  # There is an index request
+            f = Fetcher()
+            f.fetch_to_db(index_term, 1000)
+            self.redirect('/project2')
         elif query_term and query_term != '': # There is a query
             if start_result == '':
                 start_result = 0
@@ -28,8 +29,8 @@ class MainPage(webapp2.RequestHandler):
             token = normalize(word_tokenize(query_term)[0]) # that is temp solver for only one token
             train = Train.get_by_key_name(token)
             if train is None:
-                articles = []
-                search_overview = 'No result was found about %s' % query_term
+                articles = None
+                search_overview = 'No result was found about <b>%s</b>' % query_term
                 nav_bar = None
             else: 
                 cars = pickle.loads(train.cars)
@@ -45,14 +46,15 @@ class MainPage(webapp2.RequestHandler):
                             'query_term': query_term,
                             'results': articles,
                             'nav_bar': nav_bar}
+            template = jinja_environment.get_template('project2.html')
+            self.response.out.write(template.render(template_values))
         else: # There is no query
             template_values = {'nav_bar': None,
                                'results': None,
                                'search_overview': None,
                                'nav_bar': None}
-        
-        template = jinja_environment.get_template('project2.html')
-        self.response.out.write(template.render(template_values))
+            template = jinja_environment.get_template('project2.html')
+            self.response.out.write(template.render(template_values))
         
     def post(self):
         pass

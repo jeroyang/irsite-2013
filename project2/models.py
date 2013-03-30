@@ -43,10 +43,6 @@ class Article(db.Model):
     is_indexed = db.BooleanProperty()
 
 class Fetcher(object):
-    """A Fecther which can download pubmed articles"""
-    def __init__(self, limit=0):
-        """The teacher said that we only fetch the first 1000 articles about CD63"""
-        self.limit = limit
 
     def _get_pmids(self, query_term, ret_max=1000):
         ret_start = 0
@@ -66,82 +62,44 @@ class Fetcher(object):
                 break
         return output
 
-    def _get_articles(self, pmid_list, limit):
+    def _get_articles(self, pmid_list):
         """Return a file object of specific pmids"""
         url = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi'
-        if limit > 0:
-            pmid_list = pmid_list[0:limit]
-
         post_data = [('db', 'pubmed'),
                      ('id', ','.join(pmid_list)),
                      ('retmode', 'xml')]
         return urlopen(url, urlencode(post_data))
 
-    def fetch_to_db_quick(self, query_term, make_index=True):
-        if make_index: 
-            iindex = InvertedIndex()
-        with open('cd63.xml') as cd63:
-            tree = etree.parse(cd63)
+    def fetch_to_db(self, query_term, limit=None):
 
-        def _safe_find(tag, xmltree):
-            if xmltree.find('.//%s' % tag) == None:
-                return etree.Element(tag)
-            else:
-                return xmltree.find('.//%s' % tag)
-    
+        iindex = InvertedIndex()
+        if limit is not None:
+            tree = etree.parse(self._get_articles(self._get_pmids(query_term)[0:limit]))
+
         for article in tree.findall('.//MedlineCitation'):
-            d = " ".join([s.strip() for s in article.xpath('.//PubDate//text()') if s.strip() != ''])
-
-            if re.match(r'\d{4} \w\w\w \d\d', d):
-                pub_date = datetime.datetime.strptime(d, "%Y %b %d").date()
-            elif re.match(r'\d{4} \w\w\w($| |-)', d):
-                pub_date = datetime.datetime.strptime(d[0:8], "%Y %b").date()
-            else:
-                pub_date = datetime.datetime.strptime(d[0:4], "%Y").date()
-
-            this_article = Article(key_name=article.findtext(".//PMID"), 
-                title=article.findtext(".//ArticleTitle"),
-                authors=", ".join("%s %s" % (author.findtext("LastName"), author.findtext("ForeName")) for author in article.findall(".//Author")),
-                journal=article.findtext(".//Journal/Title"),
-                pub_date=pub_date,
-                fulltext="\n".join([a.text or '' for a in article.findall('.//Abstract/*')]))
-            this_article.put()
-            if make_index:
-                iindex.put(this_article)
-        if make_index:
-            iindex.save()
-        del tree
-
-    def fetch_to_db(self, query_term, make_index=False):
-
-        if make_index: 
-            iindex = InvertedIndex()
-        tree = etree.parse(self._get_articles(self._get_pmids(query_term), self.limit))
-
-        def _safe_find(tag, xmltree):
-            if xmltree.find('.//%s' % tag) == None:
-                return etree.Element(tag)
-            else:
-                return xmltree.find('.//%s' % tag)
-    
-        for article in tree.findall('.//MedlineCitation'):
-            d = _safe_find('Pubdate', article)
+            d = " ".join(article.xpath('.//PubDate/*/text()'))
             try:
-                pub_date = datetime.datetime.strptime(" ".join((d.findtext("./Year"), d.findtext("./Month"), d.findtext("./Day"))), "%Y %b %d").date()
+                if re.match(r'\d{4} \w{3} \d{1,2}$', d):
+                    pub_date = datetime.datetime.strptime(d, "%Y %b %d").date()
+                elif re.match(r'\d{4} \w{3}$', d):
+                    pub_date = datetime.datetime.strptime(d, "%Y %b").date()
+                else:
+                    pub_date = datetime.datetime.strptime(d[0:4], "%Y").date()
             except:
                 pub_date = None
-            this_article = Article(id=int(article.findtext(".//PMID")), 
-                pmid=int(article.findtext(".//PMID")),
-                title=article.findtext(".//ArticleTitle"),
-                authors=", ".join("%s %s" % (author.findtext("LastName"), author.findtext("ForeName")) for author in article.findall(".//Author")),
-                journal=article.findtext(".//Journal/Title"),
+
+            this_article = Article(
+                key_name=article.xpath("./PMID[1]/text()")[0],
+                title=unicode(article.xpath(".//ArticleTitle/text()")[0]),
+                authors=u", ".join([" ".join(author.xpath('./ForeName/text()|./LastName/text()')) for author in article.xpath('.//Author')]),
+                journal=unicode(article.xpath(".//Journal/Title/text()")[0]),
                 pub_date=pub_date,
-                fulltext="\n".join([a.text or '' for a in article.findall('.//Abstract/*')]))
+                fulltext=u"\n".join(article.xpath('.//Abstract/*/text()'))
+            )
             this_article.put()
-            if make_index:
-                iindex.put(this_article)
-        if make_index:
-            iindex.save()
+            iindex.put(this_article)
+
+        iindex.save()
         del tree
 
 
