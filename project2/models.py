@@ -33,13 +33,14 @@ def normalize(token):
         return token
 
 class Article(db.Model):
-    pmid = db.IntegerProperty() # We should also use the pmid as the key_name, so, we will have two attributes contains the pmid
+    # key_name = str(pmid)
     title = db.StringProperty()
     authors = db.StringProperty()
     journal = db.StringProperty()
     pub_date = db.DateProperty()
     fulltext = db.TextProperty()
     fetch_time = db.DateTimeProperty(auto_now=True)
+    is_indexed = db.BooleanProperty()
 
 class Fetcher(object):
     """A Fecther which can download pubmed articles"""
@@ -63,7 +64,7 @@ class Fetcher(object):
                 ret_start += ret_max
             else:
                 break
-        return [int(pmid) for pmid in output]
+        return output
 
     def _get_articles(self, pmid_list, limit):
         """Return a file object of specific pmids"""
@@ -72,7 +73,7 @@ class Fetcher(object):
             pmid_list = pmid_list[0:limit]
 
         post_data = [('db', 'pubmed'),
-                     ('id', ','.join([str(i) for i in pmid_list])),
+                     ('id', ','.join(pmid_list)),
                      ('retmode', 'xml')]
         return urlopen(url, urlencode(post_data))
 
@@ -90,9 +91,15 @@ class Fetcher(object):
     
         for article in tree.findall('.//MedlineCitation'):
             d = " ".join([s.strip() for s in article.xpath('.//PubDate//text()') if s.strip() != ''])
-            pub_date = datetime.datetime.strptime(d, "%Y %b %d").date()
-            this_article = Article(id=int(article.findtext(".//PMID")), 
-                pmid=int(article.findtext(".//PMID")),
+
+            if re.match(r'\d{4} \w\w\w \d\d', d):
+                pub_date = datetime.datetime.strptime(d, "%Y %b %d").date()
+            elif re.match(r'\d{4} \w\w\w($| |-)', d):
+                pub_date = datetime.datetime.strptime(d[0:8], "%Y %b").date()
+            else:
+                pub_date = datetime.datetime.strptime(d[0:4], "%Y").date()
+
+            this_article = Article(key_name=article.findtext(".//PMID"), 
                 title=article.findtext(".//ArticleTitle"),
                 authors=", ".join("%s %s" % (author.findtext("LastName"), author.findtext("ForeName")) for author in article.findall(".//Author")),
                 journal=article.findtext(".//Journal/Title"),
@@ -140,10 +147,9 @@ class Fetcher(object):
 
 class Train(db.Model):
     """A train is a complete posting list for a specific token"""
-    token = db.StringProperty()# We should use the token as the key_name
+    # key_name = token
     document_frequency = db.IntegerProperty()
     cars = db.BlobProperty()
-    car_string = db.TextProperty()
 
 class InvertedIndex(object):
     def __init__(self):
@@ -153,17 +159,17 @@ class InvertedIndex(object):
         """article is an instance of Article, we are talking a specific car number (but in many trains) here"""
         car = defaultdict(deque)
         tokens = chain.from_iterable(word_tokenize(sentence) for sentence \
-            in sentence_tokenize("\n".join([str(article.pmid), article.title, article.authors, article.journal, article.fulltext])))
+            in sentence_tokenize("\n".join([article.key().name(), article.title, article.authors, article.journal, article.fulltext])))
         for sit, token in enumerate(tokens):
             if normalize(token) != None:
                 car[normalize(token)].append(sit) # Finally, we will have a dictionary of toke:deque(positions) pair
 
         for token, sits in car.items():
-            self.auxiliary_index[token].append((article.pmid, len(sits), sits))
+            self.auxiliary_index[token].append((article.key().name(), len(sits), sits))
 
     def save(self):
         for token, cars in self.auxiliary_index.items():
-            Train(key_name=token, token=token, document_frequency=1, cars=pickle.dumps(cars), car_string=str(cars)).put()
+            Train(key_name=token, document_frequency=len(cars), cars=pickle.dumps(cars)).put()
 
 class SpellingCorrector(object):
     """A class of spelling corrector."""
@@ -195,7 +201,7 @@ class TermFrequency(object):
         q = Train.all()
         for train in q:
             cars = pickle.loads(train.cars)
-            self.tf_dict[train.token] = sum([tf for (id_, tf, sits) in cars])
+            self.tf_dict[train.key().name()] = sum([tf for (id_, tf, sits) in cars])
 
     def get_dict(self):
         return self.tf_dict

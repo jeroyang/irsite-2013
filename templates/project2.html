@@ -6,22 +6,20 @@
 {% endblock more_css %}
 
 {% block content %}
-<header id="branding">
-	<h1>Project #2</h1>
-	<hr />
-</header>
 <div class="full layout-grid">
 	<section class="width4 stroke">
 		<div class="column width4">
 		    <div id="searchbar">
 		        <form>
-	    		    <label class="width2 first"><input type="text" name="q" value="{{ query }}" class="text"></label>
+	    		    <label class="width2 first"><input type="text" name="q" value="{{ query_term }}" class="text"></label>
 	    			<label class="width1"><input type="submit" value="Search" class="unitx1"></label>
 	    		</form>
 		    </div>
-		    <div id="chart_div" style="width: 900px; height: 500px;"></div>
+            {% if search_overview is not none %}
 		    <hr/>
 		    <div id="search_overview">{{ search_overview }}</div>
+            {% endif %}
+            {% if results is not none %}
 	        <hr/>
 		    <div id="search_results">
 		        {% if sc_message %}
@@ -29,10 +27,15 @@
 		        {% endif %}
 		        <ol>
 		            {% for r in results %}
-		            <li><a href="http://www.ncbi.nlm.nih.gov/pubmed/{{ r }}">{{ r }}</a><br />{{ s }}</li>
+		            <li><a href="http://www.ncbi.nlm.nih.gov/pubmed/{{ r.0 }}">{{ r.1 }}</a><br />{{ s }}</li>
 		            {% endfor %}
 		        </ol>
-		    </div>	        
+		    </div>
+            {% endif %}
+            {% if nav_bar is not none %}
+            <hr />
+            <p>Nav_bar</p>
+            {% endif %}	        
 		</div>
 		
 	</section>

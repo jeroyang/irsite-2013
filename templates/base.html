@@ -18,12 +18,16 @@
 	</head>
 	<body class="page-grid">
 		<div id="page">
+			<header id="branding">
+				<h1>{{ self.title() }}</h1>
+				<hr />
+			</header>
 			{% block content %}
 			{% endblock content %}
 			<footer class="full">
 				{% block footer %}
 				<hr />
-				<p><small>Projects for Biomedical Information Retrieval Course. 2013 楊家融 p78011167
+				<p><small>Projects for Biomedical Information Retrieval Course. 2013 楊家融 P78011167
 				</small></p>
 				{% endblock footer %}
 			</footer>

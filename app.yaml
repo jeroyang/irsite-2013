@@ -28,4 +28,4 @@ libraries:
   version: latest
 
 - name: lxml
-  version: "2.3"
+  version: latest
